@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>kml_template.txt</file>
+    </qresource>
+</RCC>

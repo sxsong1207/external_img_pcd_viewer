@@ -1,0 +1,9 @@
+3rdparty/
+*.user
+*.user.*
+build-*/
+data/
+bin/
+lib/
+*.zip
+*.sdf
