@@ -25,12 +25,12 @@ class IVMainWindow : public QMainWindow {
  private slots:
   void mouseMoveInView(double x, double y);
   void handlerMove();
-  void on_actionOpenFile_triggered();
 
   void on_actionFitView_triggered();
 
   void on_actionExportKML_triggered();
-
+  void outputXML(QString path);
+  void outputKML(QString path);
   void on_actionRun_triggered();
 
   void on_imgListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
@@ -40,6 +40,9 @@ class IVMainWindow : public QMainWindow {
   void on_proc_readyRead();
   void on_actionForceStop_triggered();
 
+  void on_actionResetRegion_triggered();
+
+  void onProcStateChanged(QProcess::ProcessState state);
 private:
   Ui::IVMainWindow *ui;
   QGraphicsScene *scene_;
@@ -47,9 +50,18 @@ private:
   QGraphicsGDALItem *gdalItem_;
   MyGraphicsHandlerItem *handler_1;
   MyGraphicsHandlerItem *handler_2;
-  QLabel  *coordLabel_;
+  QLabel  *stateLabel_;
   QProcess *proc_;
 
+  QString workfolder_;
+  QString mvs3dprogram_path;
+  QString MSI_path;
+  QString PAN_path;
+  QString Result_path;
+  QString kml_path;
+  QString runfile_path;
+  QString pairlist_path;
+  bool regionSet;
   double minLat,minLon,maxLat,maxLon;
 };
 

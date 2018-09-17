@@ -4,13 +4,13 @@
 #include <ogr_spatialref.h>
 #include <QGraphicsItem>
 
-class QGraphicsGDALItem : public QGraphicsItem {
+class QGraphicsGDALItem :public QObject, public QGraphicsItem {
+    Q_OBJECT
  private:
   QString name; //!< Path of image
   QSize  size_raster;//!< Size of raster
   int number_bands;//!< number of bands
   int list_bands[3];//!< display bands, in r g b order
-  bool geoRefInited;
   double padfTransform_[6];  //!< transformation in GeoTiff
   double padfTransformInv_[4]; //!< inversed transformation from Geo To Pixel
   OGRSpatialReference oTiffRS_;
@@ -21,6 +21,7 @@ class QGraphicsGDALItem : public QGraphicsItem {
  public:
   QGraphicsGDALItem(QGraphicsItem *parent = 0);
   void load_image(const QString &name_file);
+  void close_img();
   virtual QRectF boundingRect() const;
   virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
   void mapPixelToProj(double P, double L, double *Xp, double *Yp);
@@ -29,6 +30,11 @@ class QGraphicsGDALItem : public QGraphicsItem {
   void mapProjToWGS84(double Xp, double Yp, double *lon, double *lat);
   void mapPixelToWGS84(double P, double L, double *lon,double *lat);
   void mapWGS84ToPixel(double lon, double lat, double *P, double *L);
+  GDALDataset  *pdata;
+  bool geoRefInited;
+signals:
+  void gdalProcStart();
+  void gdalProcFinish();
 };
 
 #endif // QGRAPHICSGDALITEM_H

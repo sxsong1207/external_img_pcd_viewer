@@ -13,9 +13,11 @@ class GDALView : public QGraphicsView {
   virtual void wheelEvent(QWheelEvent *event);
   virtual void mousePressEvent(QMouseEvent *event);
   virtual void mouseReleaseEvent(QMouseEvent *event);
+  virtual void mouseDoubleClickEvent(QMouseEvent *);
  signals:
   void change_scale(double scale);
   void position_on_shot(double x,double y);
+  void dbclick(double x,double y);
  private:
   double x0, y0;
   double scaled;

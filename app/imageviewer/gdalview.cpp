@@ -53,3 +53,10 @@ void GDALView::mouseReleaseEvent(QMouseEvent *event)
   QGraphicsView::mouseReleaseEvent(event);
   this->setCursor(QCursor(Qt::CrossCursor));
 }
+
+void GDALView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QGraphicsView::mouseDoubleClickEvent(event);
+    this->setCursor(QCursor(Qt::CrossCursor));
+    emit dbclick(event->pos().x(),event->pos().y());
+}

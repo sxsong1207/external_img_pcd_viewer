@@ -11,6 +11,7 @@ class UdpSource: public QThread
     Q_OBJECT
 public:
     UdpSource();
+    ~UdpSource();
     void setupSocket();
     quint16 cloudPort;
     quint16 commandPort;

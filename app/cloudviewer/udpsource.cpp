@@ -17,6 +17,12 @@ UdpSource::UdpSource()
     buffer_.reserve(10*minPacketSize);
 }
 
+UdpSource::~UdpSource()
+{
+    cloudUdp_->close();
+    commandUdp_->close();
+}
+
 void UdpSource::setupSocket()
 {
     resetGlobalShift = true;

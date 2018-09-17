@@ -17,6 +17,7 @@ ImageViewerDaemonDlg::ImageViewerDaemonDlg(QWidget *parent) :
 
 
 ImageViewerDaemonDlg::~ImageViewerDaemonDlg() {
+  udp.close();
   delete ui;
 }
 

@@ -11,7 +11,6 @@ target_link_libraries(imageviewer_daemon ${GDAL_LIBRARY} Qt5::Core Qt5::Gui Qt5:
 if(WIN32)
 target_link_libraries(imageviewer_daemon Qt5::WinMain)
 endif()
-add_executable(daemon_tester
-     daemon_tester_main.cpp)
+add_executable(daemon_tester daemon_tester_main.cpp image_data_sender.cpp)
 
 target_link_libraries(daemon_tester Qt5::Core Qt5::Network )

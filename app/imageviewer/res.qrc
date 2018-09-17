@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>kml_template.txt</file>
+        <file>MVS3D_xml_template.txt</file>
     </qresource>
 </RCC>

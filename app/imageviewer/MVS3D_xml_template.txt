@@ -4,31 +4,31 @@
         <Terrain_Info height_plane="-9999" height_range="-9999">
             <!---9999 default gives first priority to the values in kml file, and then in the first image, this information may come from the SRTM data-->
         </Terrain_Info>
-        <GSD_Info GSD_X="0.3" GSD_Y="0.3">
+        <GSD_Info GSD_X="0.5" GSD_Y="0.5">
             <!--Resolution of the final DSM and orthophoto you want to generate, it is better to be the same as that of the original resolution-->
         </GSD_Info>
-        <Registration_Info min_X="-5" max_X="5" min_Y="-5" max_Y="5" min_Z="-60" max_Z="60" step_size="0.3" blunder_threshold="6">
+        <Registration_Info min_X="-3" max_X="3" min_Y="-3" max_Y="3" min_Z="-30" max_Z="30" step_Size="0.3" blunder_threshold="6">
             <!--A naive way for registration in the object space, these are shifting parameters, in meters, all the parameters should subject to a bundle adjustment first-->
         </Registration_Info>
         <Number_of_threads value="-1">
             <!--Number of cores to be used in the program, -1 meaning using all the cores-->
         </Number_of_threads>
-        <Tile_General Tile_X="20000" Tile_Y="20000" Extra_X="10" Extra_Y="10">
+        <Tile_General Tile_X="15000" Tile_Y="15000" Extra_X="10" Extra_Y="10">
             <!--general tile size -- order of magnitude N, can be static-->
         </Tile_General>
         <Tile_Matching Tile_X="12000" Tile_Y="12000" Extra_X="10" Extra_Y="10">
             <!--Matching tile size -- order of magnitude NM, M is a number between 64-1024, 12000 for 16GB memory as a reference-->
         </Tile_Matching>
-        <Number_of_pairs value="5">
+        <Number_of_pairs value="-1">
             <!--Number of pairs to be used for generating the results, -1 means all-->
         </Number_of_pairs>
     </Parameters>
     <Input_output File_Format="TIF">
-        <Output_Directory>${OUTPUT_FOLDER}</Output_Directory>
+        <Output_Directory>${RESULT_FOLDER}</Output_Directory>
         <Input_PAN_folder>${INPUT_PAN_FOLDER}</Input_PAN_folder>
-        <Input_MSI_folder>${INPUT_MUL_FOLDER}</Input_MSI_folder>
-        <KML_File>${KML_FILE_PATH}</KML_File>
-        <Priority_file_list>${PRIORITY_FILE_PATH}</Priority_file_list>
+        <Input_MSI_folder>${INPUT_MSI_FOLDER}</Input_MSI_folder>
+        <KML_File>${KML_PATH}</KML_File>
+        <Priority_file_list>${PRIORITY_PATH}</Priority_file_list>
     </Input_output>
     <Run_Computation>
         <!--This indicates running the matching process, deleting this, the matching process will not run-->
@@ -44,8 +44,7 @@
         <Output_point_cloud_file />
     </Color_Point_Cloud_Gen>
     <Resulting_Statistics>
-        <Computing_time_SEC value="353.019" />
+        <Computing_time_SEC value="846.135" />
         <Num_Core_Used value="8" />
-        <Zone value="21H" />
     </Resulting_Statistics>
 </RSP_Performance_Test>

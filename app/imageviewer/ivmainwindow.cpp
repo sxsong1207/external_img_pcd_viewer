@@ -11,12 +11,14 @@
 
 IVMainWindow::IVMainWindow(QWidget *parent) :
   QMainWindow(parent),
+  regionSet(false),
   ui(new Ui::IVMainWindow),
   scene_(new QGraphicsScene),
   rectItem_(new QGraphicsRectItem),
   handler_1(new MyGraphicsHandlerItem),
   handler_2(new MyGraphicsHandlerItem),
   gdalItem_(new QGraphicsGDALItem),
+  stateLabel_(new QLabel),
   proc_(new QProcess) {
   ui->setupUi(this);
   ui->mainView->setScene(scene_);
@@ -27,7 +29,6 @@ IVMainWindow::IVMainWindow(QWidget *parent) :
 
   handler_1->setZValue(10);
   handler_2->setZValue(12);
-
 
   rectItem_->setPen(QPen(QBrush(Qt::red),2,Qt::DashLine));
   rectItem_->setBrush(QBrush(QColor(30,30,200,50)));
@@ -49,12 +50,19 @@ IVMainWindow::IVMainWindow(QWidget *parent) :
   handler_2->setFlag(QGraphicsItem::ItemIsFocusable, true);
   handler_2->setFlag(QGraphicsItem::ItemIgnoresTransformations,true);
 
+  statusBar()->addPermanentWidget(stateLabel_);
+  stateLabel_->setText("Idle");
   connect(handler_1,&MyGraphicsHandlerItem::posChanged,this,&IVMainWindow::handlerMove);
   connect(handler_2,&MyGraphicsHandlerItem::posChanged,this,&IVMainWindow::handlerMove);
   connect(ui->mainView,&GDALView::position_on_shot,this,&IVMainWindow::mouseMoveInView);
   connect(proc_,&QProcess::readyRead,this,&IVMainWindow::on_proc_readyRead);
+  connect(proc_,&QProcess::stateChanged,this,&IVMainWindow::onProcStateChanged);
   QTimer::singleShot(1000,this,&IVMainWindow::on_actionOpenFolder_triggered);
 
+  QString appDir = qApp->applicationDirPath();
+  QFileInfo appDirInfo(appDir);
+  mvs3dprogram_path = appDirInfo.dir().filePath("MVS3D_Bin/MSV3D.exe");
+  qDebug()<<mvs3dprogram_path;
 }
 
 IVMainWindow::~IVMainWindow() {
@@ -73,6 +81,7 @@ void IVMainWindow::mouseMoveInView(double x, double y) {
 }
 
 void IVMainWindow::handlerMove() {
+  if(!gdalItem_->geoRefInited){ return;}
   float minx,maxx,miny,maxy;
   minx=handler_1->x()<handler_2->x()?handler_1->x():handler_2->x();
   maxx=handler_1->x()>handler_2->x()?handler_1->x():handler_2->x();
@@ -80,23 +89,7 @@ void IVMainWindow::handlerMove() {
   maxy=handler_1->y()>handler_2->y()?handler_1->y():handler_2->y();
 
   rectItem_->setRect(minx,miny,maxx-minx,maxy-miny);
-}
-
-void IVMainWindow::on_actionOpenFile_triggered() {
-  QString openpath = QFileDialog::getOpenFileName(this,tr("Open Geotiff File"),"",
-                     tr("Tiff (*.tif *.tiff *.TIF *.TIFF);;All Files(*.*)"));
-  if (!openpath.isEmpty()) {
-    gdalItem_->load_image(openpath);
-  } else {
-    return;
-//    gdalItem_->load_image("/media/sxs/OSU_EXT_win/gda/ONR.VIS/data/057772981010_01_P001_PAN/11OCT22113415-P2AS-057772981010_01_P001.TIF");
-  }
-
-  handler_1->setPos(gdalItem_->boundingRect().topLeft());
-  handler_2->setPos(gdalItem_->boundingRect().bottomRight());
-  rectItem_->setRect(gdalItem_->boundingRect());
-  scene_->setSceneRect(gdalItem_->boundingRect());
-  ui->mainView->fitInView(scene_->sceneRect(),Qt::KeepAspectRatio);
+  regionSet=true;
 }
 
 void IVMainWindow::on_actionFitView_triggered() {
@@ -105,43 +98,86 @@ void IVMainWindow::on_actionFitView_triggered() {
 }
 
 void IVMainWindow::on_actionExportKML_triggered() {
-  QFile file(":/kml_template.txt");
-  file.open(QIODevice::ReadOnly);
-  QString content = file.readAll();
+    if(kml_path.isEmpty())
+    {
+        outputKML(kml_path);
+    }
+}
 
-  double lat[4];
-  double lon[4];
-  gdalItem_->mapPixelToWGS84(rectItem_->rect().left(),rectItem_->rect().top(),&lon[0],&lat[0]);
-  gdalItem_->mapPixelToWGS84(rectItem_->rect().right(),rectItem_->rect().top(),&lon[1],&lat[1]);
-  gdalItem_->mapPixelToWGS84(rectItem_->rect().right(),rectItem_->rect().bottom(),&lon[2],&lat[2]);
-  gdalItem_->mapPixelToWGS84(rectItem_->rect().left(),rectItem_->rect().bottom(),&lon[3],&lat[3]);
+void IVMainWindow::outputXML(QString path)
+{
+    QFile file(":/MVS3D_xml_template.txt");
+    file.open(QIODevice::ReadOnly);
+    QString content = file.readAll();
+    file.close();
 
-  QString coords=
-    tr("\t%1,%2,0\n\t%3,%4,0\n\t%5,%6,0\n\t%7,%8,0\n\t%1,%2,0")
-    .arg(lon[0],0,'f',9).arg(lat[0],0,'f',9).arg(lon[1],0,'f',9).arg(lat[1],0,'f',9)
-    .arg(lon[2],0,'f',9).arg(lat[2],0,'f',9).arg(lon[3],0,'f',9).arg(lat[3],0,'f',9);
+    content.replace("${RESULT_FOLDER}",Result_path);
+    content.replace("${INPUT_PAN_FOLDER}",PAN_path);
+    content.replace("${INPUT_MSI_FOLDER}",MSI_path);
+    content.replace("${KML_PATH}",kml_path);
+    content.replace("${PRIORITY_PATH}",pairlist_path);
 
-  content.replace("${RECT_COORDS}",coords);
+    QFile output(path);
+    output.open(QIODevice::WriteOnly);
+    QTextStream stream(&output);
+    stream<<content;
+    output.close();
+}
 
-  QString savePath = QFileDialog::getSaveFileName(this,tr("Export KML"),"export.kml","KML (*.kml);;All Files(*.*)");
-  if (savePath.isEmpty()) {
-    return;
-  }
-  QFile output(savePath);
-  output.open(QIODevice::WriteOnly);
-  QTextStream stream(&output);
-  stream<<content;
-  output.close();
+void IVMainWindow::outputKML(QString path)
+{
+    QFile file(":/kml_template.txt");
+    file.open(QIODevice::ReadOnly);
+    QString content = file.readAll();
+    file.close();
+
+    double lat[4];
+    double lon[4];
+    gdalItem_->mapPixelToWGS84(rectItem_->rect().left(),rectItem_->rect().top(),&lon[0],&lat[0]);
+    gdalItem_->mapPixelToWGS84(rectItem_->rect().right(),rectItem_->rect().top(),&lon[1],&lat[1]);
+    gdalItem_->mapPixelToWGS84(rectItem_->rect().right(),rectItem_->rect().bottom(),&lon[2],&lat[2]);
+    gdalItem_->mapPixelToWGS84(rectItem_->rect().left(),rectItem_->rect().bottom(),&lon[3],&lat[3]);
+
+    QString coords=
+      tr("\t%1,%2,0\n\t%3,%4,0\n\t%5,%6,0\n\t%7,%8,0\n\t%1,%2,0")
+      .arg(lon[0],0,'f',9).arg(lat[0],0,'f',9).arg(lon[1],0,'f',9).arg(lat[1],0,'f',9)
+      .arg(lon[2],0,'f',9).arg(lat[2],0,'f',9).arg(lon[3],0,'f',9).arg(lat[3],0,'f',9);
+
+    content.replace("${RECT_COORDS}",coords);
+
+    QFile output(path);
+    output.open(QIODevice::WriteOnly);
+    QTextStream stream(&output);
+    stream<<content;
+    output.close();
 }
 
 void IVMainWindow::on_actionRun_triggered() {
   ui->outputBox->clear();
-  proc_->start("ping",QStringList()<<"www.google.com");
+  outputKML(kml_path);
+  outputXML(runfile_path);
+  proc_->start(mvs3dprogram_path,QStringList()<<runfile_path);
+//  proc_->start("ping",QStringList()<<"www.google.com");
 }
 
 void IVMainWindow::on_imgListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+  if(current==NULL) {
+      gdalItem_->close_img();
+      return;
+  }
   QString path = current->data(Qt::UserRole).toString();
-  qDebug()<<"File path "<<path;
+  qDebug()<<path;
+
+  if(regionSet && gdalItem_->geoRefInited)
+  {
+      double lat,lon;
+      gdalItem_->mapPixelToWGS84(rectItem_->rect().right(),rectItem_->rect().top(),&lon,&lat);
+      maxLat = lat;
+      maxLon = lon;
+      gdalItem_->mapPixelToWGS84(rectItem_->rect().left(),rectItem_->rect().bottom(),&lon,&lat);
+      minLat=lat;
+      minLon=lon;
+  }
 
   if (!path.isEmpty()) {
     gdalItem_->load_image(path);
@@ -149,9 +185,30 @@ void IVMainWindow::on_imgListWidget_currentItemChanged(QListWidgetItem *current,
     return;
   }
 
-  handler_1->setPos(gdalItem_->boundingRect().topLeft());
-  handler_2->setPos(gdalItem_->boundingRect().bottomRight());
-  rectItem_->setRect(gdalItem_->boundingRect());
+  if(gdalItem_->geoRefInited)
+  {
+      handler_1->setVisible(true);
+      handler_2->setVisible(true);
+      rectItem_->setVisible(true);
+      if(!regionSet )
+      {
+          handler_1->setPos(gdalItem_->boundingRect().topLeft());
+          handler_2->setPos(gdalItem_->boundingRect().bottomRight());
+          rectItem_->setRect(gdalItem_->boundingRect());
+      }else{
+          double right,top,left,bottom;
+          gdalItem_->mapWGS84ToPixel(minLon,minLat,&left,&bottom);
+          gdalItem_->mapWGS84ToPixel(maxLon,maxLat,&right,&top);
+          handler_1->setPos(QPointF(left,top));
+          handler_2->setPos(QPointF(right,bottom));
+          rectItem_->setRect(QRectF(QPointF(left,top),QPointF(right,bottom)));
+      }
+  }else{
+      handler_1->setVisible(false);
+      handler_2->setVisible(false);
+      rectItem_->setVisible(false);
+  }
+
   scene_->setSceneRect(gdalItem_->boundingRect());
   ui->mainView->fitInView(scene_->sceneRect(),Qt::KeepAspectRatio);
 }
@@ -160,18 +217,39 @@ void IVMainWindow::on_actionOpenFolder_triggered() {
 
   QString folderPath = QFileDialog::getExistingDirectory(this,tr("Open Work Folder"),"",QFileDialog::ReadOnly);
   if (folderPath.isEmpty()) {
-    folderPath="/media/sxs/OSU_EXT_win/gda/ONR.VIS/data";
+    return;
+    folderPath="D:/gda/ONR.VIS/data/NTF_TO_TIF_SS";
   }
+
+  QFileInfo info(folderPath);
+  workfolder_=info.absoluteDir().path();
+  QDir workdir(workfolder_);
+  MSI_path = workdir.filePath("MSI_Folder");
+  PAN_path = workdir.filePath("PAN_folder_N");
+  Result_path = workdir.filePath("Result_N");
+  kml_path = workdir.filePath("region.kml");
+  runfile_path = workdir.filePath("run.xml");
+  pairlist_path = workdir.filePath("Priority_pair_list_tif_Selected.txt");
+
+  qDebug()<<"Workfolder"<< info.absoluteDir().path();
+  qDebug()<<MSI_path;
+  qDebug()<<PAN_path;
+  qDebug()<<Result_path;
+  qDebug()<<kml_path;
+  qDebug()<<runfile_path;
+  qDebug()<<pairlist_path;
+  qDebug()<<"#1";
   ui->imgListWidget->clear();
+  qDebug()<<"#2";
   QDir dir(folderPath);
-  QStringList filters;
-  filters << "*.tif" << "*.Tif" << "*.TIF";
-  QFileInfoList tiffList = dir.entryInfoList(QStringList()<<"*.tif"<<"*.Tif"<<"*.TIF");
+  QFileInfoList tiffList = dir.entryInfoList(QStringList()<<"*.tif" << "*.Tif" << "*.TIF");
   for (int i=0; i<tiffList.size(); ++i) {
     QListWidgetItem *item = new QListWidgetItem(tiffList[i].baseName());
     item->setData(Qt::UserRole,tiffList[i].absoluteFilePath());
     ui->imgListWidget->addItem(item);
   }
+  qDebug()<<"#3";
+  regionSet=false;
 }
 
 void IVMainWindow::on_proc_readyRead() {
@@ -191,4 +269,32 @@ void IVMainWindow::on_proc_readyRead() {
 void IVMainWindow::on_actionForceStop_triggered()
 {
     proc_->kill();
+}
+
+void IVMainWindow::on_actionResetRegion_triggered()
+{
+    handler_1->setPos(gdalItem_->boundingRect().topLeft());
+    handler_2->setPos(gdalItem_->boundingRect().bottomRight());
+    rectItem_->setRect(gdalItem_->boundingRect());
+}
+
+void IVMainWindow::onProcStateChanged(QProcess::ProcessState state)
+{
+    enum ProcessState {
+        NotRunning,
+        Starting,
+        Running
+    };
+    switch(state)
+    {
+    case QProcess::NotRunning:
+        stateLabel_->setText("Idle");
+        break;
+    case QProcess::Starting:
+        stateLabel_->setText("Starting");
+        break;
+    case QProcess::Running:
+        stateLabel_->setText("Running");
+        break;
+    }
 }

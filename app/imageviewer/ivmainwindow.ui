@@ -11,33 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>MVS3D Launcher</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QLabel" name="label">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <family>DejaVu Serif Condensed</family>
-        <pointsize>22</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>SOME THING TO SHOW</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
      <widget class="QSplitter" name="splitter_2">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -82,6 +60,18 @@
         <property name="cursor" stdset="0">
          <cursorShape>CrossCursor</cursorShape>
         </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="backgroundBrush">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </property>
        </widget>
        <widget class="QPlainTextEdit" name="outputBox">
         <property name="sizePolicy">
@@ -114,16 +104,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1024</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
@@ -136,9 +116,8 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionOpenFolder"/>
-   <addaction name="actionOpenFile"/>
    <addaction name="actionFitView"/>
-   <addaction name="actionExportKML"/>
+   <addaction name="actionResetRegion"/>
    <addaction name="actionRun"/>
    <addaction name="actionForceStop"/>
   </widget>
@@ -173,6 +152,11 @@
   <action name="actionForceStop">
    <property name="text">
     <string>ForceStop</string>
+   </property>
+  </action>
+  <action name="actionResetRegion">
+   <property name="text">
+    <string>ResetRegion</string>
    </property>
   </action>
  </widget>

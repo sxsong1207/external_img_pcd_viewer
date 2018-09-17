@@ -95,9 +95,20 @@ void SendText(QString text, int port_number)
 }
 
 quint64 totalNum=0;
+
+void exit_handler(int s){
+    printf("Caught signal %d\n",s);
+    if(udpSocket)
+    {
+        udpSocket->close();
+    }
+    exit(1);
+}
+
 int main(int argc,char** argv)
 {
     QCoreApplication app(argc, argv);
+
     std::vector<pt3D> package;
     int byte_limit = 1200;
     int max_npts = byte_limit/sizeof(pt3D);
@@ -143,7 +154,6 @@ int main(int argc,char** argv)
             SendText("Total Num "+QString::number(totalNum),CMD_PORT);
         }
     }// end for.
-
 
     return 0;
 }
